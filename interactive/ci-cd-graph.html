@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>CI/CD Pipeline Interactive Diagram</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: sans-serif;
+        background-color: #1e1e1e;
+        color: white;
+      }
+      svg {
+        width: 100vw;
+        height: 100vh;
+      }
+      .tooltip {
+        position: absolute;
+        text-align: left;
+        width: auto;
+        max-width: 240px;
+        padding: 8px;
+        font-size: 13px;
+        background: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        border-radius: 4px;
+        pointer-events: none;
+        z-index: 10;
+      }
+      .link-label {
+        font-size: 12px;
+        fill: white;
+        pointer-events: none;
+      }
+      marker {
+        fill: #999;
+      }
+    </style>
+  </head>
+  <body>
+    <svg></svg>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+      const svg = d3.select("svg"),
+        width = window.innerWidth,
+        height = window.innerHeight;
+
+      const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+      const graph = {
+        nodes: [
+          {
+            id: "PushGitHub",
+            name: "Push to GitHub (main branch)",
+            group: "Trigger",
+          },
+          {
+            id: "SecretsBox",
+            name: "GitHub Secrets (Encrypted)",
+            group: "Security",
+          },
+          { id: "DOCKER_USERNAME", name: "DOCKER_USERNAME", group: "Secret" },
+          { id: "DOCKER_TOKEN", name: "DOCKER_TOKEN", group: "Secret" },
+          {
+            id: "Actions",
+            name: "GitHub Actions Workflow Triggered",
+            group: "Workflow",
+          },
+          { id: "Build", name: "Build from Dockerfile", group: "Build" },
+          {
+            id: "PushDocker",
+            name: "Push to DockerHub (luximo1/otuvedo-ceg3120)",
+            group: "Deploy",
+          },
+          {
+            id: "Deployed",
+            name: "Deployed Container (ng serve)",
+            group: "Runtime",
+          },
+        ],
+        links: [
+          { source: "PushGitHub", target: "Actions", label: "Triggers" },
+          { source: "DOCKER_USERNAME", target: "Actions", label: "Used by" },
+          { source: "DOCKER_TOKEN", target: "Actions", label: "Used by" },
+          {
+            source: "SecretsBox",
+            target: "DOCKER_USERNAME",
+            label: "Contains",
+          },
+          { source: "SecretsBox", target: "DOCKER_TOKEN", label: "Contains" },
+          { source: "Actions", target: "Build", label: "Reads" },
+          { source: "Build", target: "PushDocker", label: "Pushes Image" },
+          { source: "PushDocker", target: "Deployed", label: "Pulled on run" },
+        ],
+      };
+
+      svg
+        .append("defs")
+        .selectAll("marker")
+        .data(["arrow"])
+        .enter()
+        .append("marker")
+        .attr("id", "arrow")
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", 20)
+        .attr("refY", 0)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M0,-5L10,0L0,5")
+        .attr("fill", "#999");
+
+      const simulation = d3
+        .forceSimulation(graph.nodes)
+        .force(
+          "link",
+          d3
+            .forceLink(graph.links)
+            .id((d) => d.id)
+            .distance(150)
+        )
+        .force("charge", d3.forceManyBody().strength(-400))
+        .force("center", d3.forceCenter(width / 2, height / 2));
+
+      const link = svg
+        .append("g")
+        .attr("stroke", "#999")
+        .attr("stroke-opacity", 0.6)
+        .selectAll("line")
+        .data(graph.links)
+        .join("line")
+        .attr("stroke-width", 2)
+        .attr("marker-end", "url(#arrow)");
+
+      const linkLabels = svg
+        .append("g")
+        .selectAll("text")
+        .data(graph.links)
+        .join("text")
+        .attr("class", "link-label")
+        .text((d) => d.label || "");
+
+      const node = svg
+        .append("g")
+        .selectAll("g")
+        .data(graph.nodes)
+        .join("g")
+        .call(drag(simulation));
+
+      node
+        .append("circle")
+        .attr("r", 24)
+        .attr("fill", (d) => color(d.group))
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 1.5);
+
+      node
+        .append("text")
+        .attr("x", 30)
+        .attr("y", 5)
+        .text((d) => d.name)
+        .clone(true)
+        .lower()
+        .attr("fill", "none")
+        .attr("stroke", "white")
+        .attr("stroke-width", 2);
+
+      const tooltip = d3
+        .select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
+      node
+        .on("mouseover", (event, d) => {
+          tooltip.transition().duration(200).style("opacity", 0.9);
+          tooltip
+            .html("<strong>" + d.name + "</strong>")
+            .style("left", event.pageX + 10 + "px")
+            .style("top", event.pageY - 28 + "px");
+        })
+        .on("mouseout", () => {
+          tooltip.transition().duration(500).style("opacity", 0);
+        });
+
+      simulation.on("tick", () => {
+        link
+          .attr("x1", (d) => d.source.x)
+          .attr("y1", (d) => d.source.y)
+          .attr("x2", (d) => d.target.x)
+          .attr("y2", (d) => d.target.y);
+
+        linkLabels
+          .attr("x", (d) => (d.source.x + d.target.x) / 2)
+          .attr("y", (d) => (d.source.y + d.target.y) / 2);
+
+        node.attr("transform", (d) => `translate(${d.x},${d.y})`);
+      });
+
+      function drag(simulation) {
+        function dragstarted(event) {
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          event.subject.fx = event.subject.x;
+          event.subject.fy = event.subject.y;
+        }
+
+        function dragged(event) {
+          event.subject.fx = event.x;
+          event.subject.fy = event.y;
+        }
+
+        function dragended(event) {
+          if (!event.active) simulation.alphaTarget(0);
+          event.subject.fx = null;
+          event.subject.fy = null;
+        }
+
+        return d3
+          .drag()
+          .on("start", dragstarted)
+          .on("drag", dragged)
+          .on("end", dragended);
+      }
+    </script>
+  </body>
+</html>

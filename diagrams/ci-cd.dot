@@ -1,0 +1,28 @@
+digraph CICD {
+    rankdir=LR;
+    node [shape=box, style=filled, fillcolor="#e3f2fd", fontname="Helvetica"];
+
+    Code [label="Push to GitHub (main branch)"];
+    Actions [label="GitHub Actions Workflow Triggered"];
+    Dockerfile [label="Build from Dockerfile"];
+    DockerHub [label="Push to DockerHub (luximo1/otuvedo-ceg3120)"];
+    Container [label="Deployed Container (ng serve)"];
+
+    Code -> Actions [label="Triggers"];
+    Actions -> Dockerfile [label="Reads"];
+    Dockerfile -> DockerHub [label="Pushes Image"];
+    DockerHub -> Container [label="Pulled on run"];
+
+    subgraph cluster_secrets {
+        label="GitHub Secrets (Encrypted)";
+        style=dashed;
+        color=gray;
+        fontname="Helvetica-Bold";
+
+        DOCKER_USERNAME [label="DOCKER_USERNAME"];
+        DOCKER_TOKEN [label="DOCKER_TOKEN"];
+    }
+
+    DOCKER_USERNAME -> Actions;
+    DOCKER_TOKEN -> Actions;
+}
