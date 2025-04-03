@@ -61,6 +61,20 @@ This Project Phase 1 explains how I am creating a version of a web application d
     - [Accessing the Interactive Version](#accessing-the-interactive-version)
   - [6. Logical Flow Model](#6-logical-flow-model)
 - [Resources](#resources)
+- [Project 5](#project-5)
+- [CI/CD Workflow Implementation – Phase Four: Semantic Versioning and Release Tagging](#cicd-workflow-implementation--phase-four-semantic-versioning-and-release-tagging)
+  - [1. Introduction](#1-introduction)
+  - [2. Semantic Tagging Procedure](#2-semantic-tagging-procedure)
+    - [Tag Naming Convention](#tag-naming-convention)
+  - [3. Workflow Trigger Behavior](#3-workflow-trigger-behavior)
+    - [Relevant Workflow File (Updated Version)](#relevant-workflow-file-updated-version)
+    - [Example Execution](#example-execution)
+  - [4. Tag Inference via `docker/metadata-action`](#4-tag-inference-via-dockermetadata-action)
+    - [Sample Configuration](#sample-configuration)
+  - [5. Tag Distribution on DockerHub](#5-tag-distribution-on-dockerhub)
+    - [Repository](#repository)
+    - [Example Tag Listing](#example-tag-listing)
+  - [6. Outcome Validation](#6-outcome-validation)
 
 ---
 
@@ -541,4 +555,130 @@ The diagram—both static and interactive—encodes the following CI/CD pipeline
 
 # Resources
 - []()
-- 
+
+
+# Project 5
+
+# CI/CD Workflow Implementation – Phase Four: Semantic Versioning and Release Tagging
+
+## 1. Introduction
+
+This phase introduces **semantic versioning** into the CI/CD pipeline using annotated Git tags. Instead of relying solely on the `latest` tag convention, this enhancement applies structured version identifiers following the `major.minor.patch` schema to all Docker image releases.
+
+The approach ensures:
+- Predictable release management  
+- Backward-compatible rollbacks  
+- Enhanced traceability of image versions on DockerHub  
+- Integration of branding into the tagging system (`lux-vX.Y.Z`)
+
+This functionality is powered by the `docker/metadata-action` GitHub Action module and is triggered upon annotated Git tag pushes.
+
+---
+
+## 2. Semantic Tagging Procedure
+
+To manually create and push a versioned Git tag that conforms to [Semantic Versioning standards](https://semver.org):
+
+```
+git tag -a lux-v1.1.0 -m "LuxOS: second release with version metadata"
+git push origin lux-v1.1.0
+```
+![Fig1.0](image.png)
+
+### Tag Naming Convention
+
+The following pattern is recommended for semantic releases:
+
+```
+<namespace>-v<major>.<minor>.<patch>
+```
+
+Examples:
+- `lux-v1.0.0` – Initial major release  
+- `lux-v1.1.0` – Minor feature additions  
+- `lux-v1.1.1` – Patch-level fixes  
+
+These tags act as immutable references and will trigger image builds under uniquely identifiable labels.
+
+---
+
+## 3. Workflow Trigger Behavior
+
+Upon pushing a Git tag to the remote repository, the GitHub Actions pipeline (`docker-build.yml`) performs the following steps:
+
+1. Detects the `push` event for a Git tag
+2. Uses `docker/metadata-action` to extract semantic version components
+3. Builds the Docker image from the project’s `Dockerfile`
+4. Pushes the resulting image to DockerHub with multiple tags:
+
+| Tag Format       | Description                                |
+|------------------|--------------------------------------------|
+| `lux-v1.1.0`     | Full semantic version (stable release ID)  |
+| `lux-v1.1`       | Minor version shorthand                     |
+| `lux-v1`         | Major version shorthand                     |
+| `latest`         | Maintained for backward compatibility      |
+
+### Relevant Workflow File (Updated Version)
+
+```
+.github/workflows/docker-build.yml
+```
+
+### Example Execution
+
+Full build logs and confirmation of tagged actions are viewable at:  
+[GitHub Actions – Enable semantic versioning via docker/metadata-action](https://github.com/WSU-kduncan/ceg3120-cicd-Luximo/actions/runs/14229282028/job/39876136413)
+
+---
+
+## 4. Tag Inference via `docker/metadata-action`
+
+The `docker/metadata-action` module automatically parses the Git tag and dynamically sets image tags using built-in GitHub context variables.
+
+### Sample Configuration
+
+```
+- uses: docker/metadata-action@v5
+  id: meta
+  with:
+    images: luximo1/otuvedo-ceg3120
+```
+
+This module abstracts the complexity of tag parsing and ensures consistency across image pushes.
+
+---
+
+## 5. Tag Distribution on DockerHub
+
+After a successful run, DockerHub will reflect the full spectrum of semantic tags derived from the pushed Git tag.
+
+### Repository
+
+```
+https://hub.docker.com/repository/docker/luximo1/otuvedo-ceg3120/tags
+```
+
+### Example Tag Listing
+
+| Tag Name       | Purpose                       |
+|----------------|-------------------------------|
+| `lux-v1.1.0`   | Fully qualified release tag   |
+| `lux-v1.1`     | Minor shorthand               |
+| `lux-v1`       | Major shorthand               |
+| `latest`       | Legacy/latest compatibility   |
+
+These tags map to the **same image digest**, ensuring that deployment targets can select their versioning precision (pinned vs. rolling).
+
+---
+
+## 6. Outcome Validation
+
+| Operation                 | Status       |
+|---------------------------|--------------|
+| Git annotated tag pushed  | Confirmed    |
+| CI workflow triggered     | Confirmed    |
+| Tag parsing via metadata  | Successful   |
+| Docker image built        | Verified     |
+| All tags pushed to DockerHub | Complete |
+| CI/CD flow integrity      | Maintained   |
+
