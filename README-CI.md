@@ -75,6 +75,34 @@ This Project Phase 1 explains how I am creating a version of a web application d
     - [Repository](#repository)
     - [Example Tag Listing](#example-tag-listing)
   - [6. Outcome Validation](#6-outcome-validation)
+- [CI/CD Workflow Implementation – Phase Five: Continuous Deployment via Webhooks on AWS EC2](#cicd-workflow-implementation--phase-five-continuous-deployment-via-webhooks-on-aws-ec2)
+  - [1. Objective](#1-objective)
+  - [2. Infrastructure Overview](#2-infrastructure-overview)
+  - [3. Docker Environment Setup](#3-docker-environment-setup)
+  - [4. Redeployment Script – `redeploy.sh`](#4-redeployment-script--redeploysh)
+    - [Functionality](#functionality)
+    - [File Path](#file-path)
+    - [GitHub Reference](#github-reference)
+  - [5. Webhook Engine – `adnanh/webhook`](#5-webhook-engine--adnanhwebhook)
+    - [Purpose](#purpose)
+    - [Installation](#installation)
+    - [AWS Security Group Configuration](#aws-security-group-configuration)
+  - [6. Webhook Hook Definition – `hooks.json`](#6-webhook-hook-definition--hooksjson)
+    - [File Path](#file-path-1)
+    - [GitHub Reference](#github-reference-1)
+  - [7. Manual Webhook Test Procedure](#7-manual-webhook-test-procedure)
+    - [Start Listener in Foreground](#start-listener-in-foreground)
+    - [Simulate Webhook Trigger](#simulate-webhook-trigger)
+    - [Log Inspection](#log-inspection)
+    - [Container Verification](#container-verification)
+  - [8. GitHub Webhook Configuration](#8-github-webhook-configuration)
+  - [9. Systemd Service – `webhook.service`](#9-systemd-service--webhookservice)
+    - [Purpose](#purpose-1)
+    - [File Path](#file-path-2)
+    - [GitHub Reference](#github-reference-2)
+    - [Service Definition](#service-definition)
+    - [Enable and Start](#enable-and-start)
+  - [10. Change Management Protocols](#10-change-management-protocols)
 
 ---
 
@@ -682,5 +710,252 @@ These tags map to the **same image digest**, ensuring that deployment targets ca
 | All tags pushed to DockerHub | Complete |
 | CI/CD flow integrity      | Maintained   |
 
+# CI/CD Workflow Implementation – Phase Five: Continuous Deployment via Webhooks on AWS EC2
 
+## 1. Objective
 
+This phase establishes a **self-healing deployment pipeline** triggered by GitHub webhook events. Upon each push to the `main` branch, the system automates:
+
+- Pulling the latest Docker image from DockerHub  
+- Tearing down the old container  
+- Launching the updated Angular frontend (`luximo1/otuvedo-ceg3120`)  
+- Running entirely on an AWS EC2 instance using `adnanh/webhook` for HTTP-based event listening
+
+This closes the DevOps feedback loop, delivering true Continuous Deployment (CD) on cloud infrastructure.
+
+---
+
+## 2. Infrastructure Overview
+
+| Attribute           | Value                           |
+|---------------------|----------------------------------|
+| Instance OS         | Ubuntu 24.04 LTS                 |
+| Kernel              | 6.8.0-1024-aws x86_64            |
+| Instance Type       | `t2.small` (1 vCPU, 2 GB RAM)    |
+| Public IP           | `54.89.84.52`                    |
+| Docker Image        | `luximo1/otuvedo-ceg3120`        |
+
+---
+
+## 3. Docker Environment Setup
+
+To provision Docker and all supporting dependencies:
+
+```
+# Install system dependencies
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg
+```
+
+- ![Fig3.0](image-1.png)
+
+```
+# Add Docker GPG key
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+    sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+# Add Docker’s APT repository
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+```
+
+- ![Fig3.1](image-2.png)
+
+```
+# Install Docker components
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io \
+    docker-buildx-plugin docker-compose-plugin
+
+# Add user to docker group
+sudo usermod -aG docker $USER
+```
+
+- ![Fig3.2](image-3.png)
+> **Note:** Logout and back in to apply group membership changes at all times.
+
+---
+
+## 4. Redeployment Script – `redeploy.sh`
+
+### Functionality
+
+The redeployment script orchestrates container replacement upon webhook trigger:
+
+- Pulls the latest image from DockerHub
+- Stops and removes the previous container  
+- Runs a new instance bound to host port 4200
+
+### File Path
+
+```
+/home/ubuntu/redeploy.sh
+```
+
+### GitHub Reference
+
+[deployment/redeploy.sh](https://github.com/WSU-kduncan/ceg3120-cicd-Luximo/blob/main/deployment/redeploy.sh)
+
+---
+
+## 5. Webhook Engine – `adnanh/webhook`
+
+### Purpose
+
+The `webhook` binary exposes an HTTP listener capable of executing scripts based on JSON-defined hook triggers.
+
+### Installation
+
+```
+sudo apt update
+sudo apt install -y webhook
+```
+
+### AWS Security Group Configuration
+
+| Port  | Description                      |
+|-------|----------------------------------|
+| 4200  | Application (Angular frontend)   |
+| 9000  | Webhook listener endpoint        |
+
+These ports must be opened in the EC2 instance’s associated security group by the way for it to work.
+
+---
+
+## 6. Webhook Hook Definition – `hooks.json`
+
+This file configures the trigger endpoint (`/hooks/redeploy`) and defines the conditions under which `redeploy.sh` is executed.
+
+### File Path
+
+```
+/etc/webhook/hooks.json
+```
+
+### GitHub Reference
+
+[deployment/hooks.json](https://github.com/WSU-kduncan/ceg3120-cicd-Luximo/blob/main/deployment/hooks.json)
+
+---
+
+## 7. Manual Webhook Test Procedure
+
+To validate the webhook setup manually:
+
+### Start Listener in Foreground
+
+```
+webhook -hooks /etc/webhook/hooks.json -verbose -ip 0.0.0.0 -port 9000
+```
+
+- ![Fig7.0](image-4.png)
+
+### Simulate Webhook Trigger
+
+```
+curl -X POST http://54.89.84.52:9000/hooks/redeploy \
+  -H "X-Hook-Token: luximo1-deploy-token"
+```
+
+- ![Fig7.1](image-5.png)
+
+### Log Inspection
+
+```
+sudo journalctl -u webhook -f
+```
+
+Look for:
+- Hook matched and executed  
+- Script path and exit status  
+- Container logs or Docker activity
+
+- ![Fig7.2](image-6.png)
+
+### Container Verification
+
+```
+docker ps
+```
+
+---
+
+## 8. GitHub Webhook Configuration
+
+To bind GitHub events to your EC2 deployment:
+
+1. Go to repository then **Settings then Webhooks then click on Add webhook**
+2. **Payload URL**:  
+   ```
+   http://54.89.84.52:9000/hooks/redeploy
+   ```
+3. Content Type: `application/json`  
+4. Leave Secret blank (optional; token is already enforced via headers)  
+5. Events to trigger: **Just the push event**  
+6. Save and test delivery for 200 OK response
+
+---
+
+## 9. Systemd Service – `webhook.service`
+
+### Purpose
+
+Ensures `webhook` remains persistent across reboots and daemon reloads.
+
+### File Path
+
+```bash
+/etc/systemd/system/webhook.service
+```
+
+### GitHub Reference
+
+[`deployment/webhook.service`](deployment/webhook.service)
+
+### Service Definition
+
+```ini
+[Unit]
+Description=Webhook Listener Service
+After=network.target docker.service
+
+[Service]
+ExecStart=/usr/bin/webhook -hooks /etc/webhook/hooks.json -ip 0.0.0.0 -port 9000 -verbose
+Restart=always
+User=ubuntu
+WorkingDirectory=/home/ubuntu
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Enable and Start
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable webhook
+sudo systemctl start webhook
+```
+
+To inspect the service:
+
+```bash
+sudo systemctl status webhook
+```
+
+---
+
+## 10. Change Management Protocols
+
+| File Changed         | Required Action                                 |
+|----------------------|--------------------------------------------------|
+| `webhook.service`    | `daemon-reload` + `restart`                      |
+| `hooks.json`         | `systemctl restart webhook`                      |
+| `redeploy.sh`        | No action; automatically called on webhook hit  |
+
+---
