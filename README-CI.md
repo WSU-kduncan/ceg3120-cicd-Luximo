@@ -915,7 +915,7 @@ Ensures `webhook` remains persistent across reboots and daemon reloads.
 
 ### GitHub Reference
 
-[`deployment/webhook.service`](deployment/webhook.service)
+[deployment/webhook.service](https://github.com/WSU-kduncan/ceg3120-cicd-Luximo/blob/main/deployment/webhook.service)
 
 ### Service Definition
 
@@ -936,7 +936,7 @@ WantedBy=multi-user.target
 
 ### Enable and Start
 
-```bash
+```
 sudo systemctl daemon-reload
 sudo systemctl enable webhook
 sudo systemctl start webhook
@@ -944,7 +944,7 @@ sudo systemctl start webhook
 
 To inspect the service:
 
-```bash
+```
 sudo systemctl status webhook
 ```
 
@@ -959,3 +959,4 @@ sudo systemctl status webhook
 | `redeploy.sh`        | No action; automatically called on webhook hit  |
 
 ---
+
