@@ -1,14 +1,22 @@
 {
     "cSpell.words": [
+        "adnanh",
         "Buildx",
         "cicd",
+        "containerd",
+        "dearmor",
         "dockerhub",
+        "dpkg",
         "fontname",
         "Graphviz",
+        "journalctl",
+        "keyrings",
         "layouting",
         "multistep",
+        "onprem",
         "pullable",
         "rankdir",
-        "Tpng"
+        "Tpng",
+        "usermod"
     ]
 }
