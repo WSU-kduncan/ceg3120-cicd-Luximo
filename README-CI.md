@@ -32,8 +32,6 @@ This Project Phase 1 explains how I am creating a version of a web application d
     - [Push Operation](#push-operation)
     - [Repository Access](#repository-access)
   - [7. Application Accessibility](#7-application-accessibility)
-  - [8. Validation Matrix](#8-validation-matrix)
-  - [End Notes](#end-notes)
 - [CI/CD Workflow Implementation – Phase Two: GitHub Actions Automation \& Registry Synchronization](#cicd-workflow-implementation--phase-two-github-actions-automation--registry-synchronization)
   - [1. Overview](#1-overview)
   - [2. Secure Integration with DockerHub](#2-secure-integration-with-dockerhub)
@@ -48,7 +46,6 @@ This Project Phase 1 explains how I am creating a version of a web application d
     - [4.2 Docker Pull Command](#42-docker-pull-command)
       - [Workflow file link](#workflow-file-link)
   - [5. Reusability and Extension](#5-reusability-and-extension)
-  - [6. Completion Checklist](#6-completion-checklist)
 - [CI/CD Workflow Implementation – Phase Three: Visualization and System Mapping](#cicd-workflow-implementation--phase-three-visualization-and-system-mapping)
   - [1. Purpose and Scope](#1-purpose-and-scope)
   - [2. Tooling \& Methodology](#2-tooling--methodology)
@@ -253,31 +250,7 @@ Once the container is instantiated and running, navigate to:
 http://localhost:4200
 ```
 
-The browser should render the SPA titled **Birds Gone Wild**, including an epic eagle graphic, themed layout, and a functional Angular navigation component.
-
----
-
-## 8. Validation Matrix
-
-| Task                                                   | Outcome     |
-|--------------------------------------------------------|-------------|
-| Docker installed and verified (WSL2 backend)           | Confirmed   |
-| Angular app placed under `angular-site/`               | Confirmed   |
-| Manual runtime containerization                        | Validated   |
-| Dockerfile written and optimized                       | Confirmed   |
-| Image built using `docker build`                       | Successful  |
-| Image executed locally via container                   | Functional  |
-| Angular app accessible via browser                     | Verified    |
-| DockerHub authentication and image push                | Successful  |
-| Public pullable container image available              | Confirmed   |
-| Final system behavior matches project requirements     | Verified    |
-
----
-
-## End Notes
-
-This README documents Phase One of the CI/CD workflow. It establishes a production-ready, platform-agnostic container for frontend delivery, aligning with modern DevOps and microservice standards. Phase Two will expand upon this by introducing automation pipelines using GitHub Actions, image versioning, and environment-specific deployments.
-
+This confirms that the browser rendered the SPA titled **Birds Gone Wild**, including an epic eagle graphic, themed layout, and a functional angular navigation component.
 
 # CI/CD Workflow Implementation – Phase Two: GitHub Actions Automation & Registry Synchronization
 
@@ -392,7 +365,7 @@ jobs:
 
 ### 4.1 DockerHub Target
 
-The image is pushed to the following public repository:
+The image is pushed to the following public repo:
 
 **DockerHub:**  
 [https://hub.docker.com/repository/docker/luximo1/otuvedo-ceg3120/general](https://hub.docker.com/repository/docker/luximo1/otuvedo-ceg3120/general)
@@ -429,23 +402,11 @@ This workflow can be adapted for use across multiple repositories with minimal c
 
 ---
 
-## 6. Completion Checklist
-
-| Task                                                      | Status      |
-|-----------------------------------------------------------|-------------|
-| GitHub Actions workflow defined                           | Complete    |
-| Repository secrets created                                | Verified    |
-| Docker authentication tested                              | Successful  |
-| Build triggered on `main` branch push                     | Confirmed   |
-| Image pushed to DockerHub automatically                   | Confirmed   |
-| Pullable public image verified from DockerHub             | Verified    |
-| Manual Docker builds deprecated in favor of automation    | Complete    |
-
 # CI/CD Workflow Implementation – Phase Three: Visualization and System Mapping
 
 ## 1. Purpose and Scope
 
-This phase provides visual documentation for the CI/CD pipeline established in the earlier stages. We have created diagrams to show how the system is structured, how different resources work together, and what triggers the automation throughout the process of packaging and deploying applications. The final materials include both simple images and interactive formats, making them easy for everyone, regardless of technical knowledge, to understand.
+This phase provides visual documentation for the CI/CD pipeline established in the earlier stages. I have created diagrams to show how the system is structured, how different resources work together, and what triggers the automation throughout the process of packaging and deploying applications. The final materials include both simple images and interactive formats, making them easy for everyone, regardless of technical knowledge, to understand.
 
 ---
 
@@ -458,7 +419,7 @@ This phase provides visual documentation for the CI/CD pipeline established in t
 
 These tools were selected to meet dual objectives:  
 - **Graphviz** for precise, version-controllable diagrams with build reproducibility  
-- **D3.js** for browser-based interactivity, dynamic layouting, and enhanced visual parsing
+- **D3.js** for browser-based interactivity, dynamic layouting, and much better visual parsing
 
 ---
 
@@ -466,14 +427,7 @@ These tools were selected to meet dual objectives:
 
 The following folder hierarchy was introduced to organize diagram sources, builds, and presentation layers:
 
-```
-├── diagrams/
-│   └── ci-cd.dot                   # Source definition in Graphviz DOT language
-├── images/
-│   └── ci-cd.png                   # Screenshot of the Interactive website
-├── interactive/
-│   └── ci-cd-graph-arrows.html     # Interactive force-directed D3.js version
-```
+![Fig2.0](images/image-16.png)
 
 These directories support versioning, artifact regeneration, and standalone visualization access.
 
@@ -485,7 +439,7 @@ A static diagram was constructed using the DOT language to define a directed gra
 
 ### Command to Generate Output
 
-```ash
+```
 dot -Tpng diagrams/ci-cd.dot -o images/ci-cd.png
 ```
 
@@ -495,7 +449,7 @@ This converts the DOT graph source to a high-resolution PNG format suitable for 
 
 The diagram below illustrates the data and process flow across the system components:
 
-![CI/CD Diagram](images/ci-cd.png)
+- ![CI/CD Diagram](images/ci-cd.png)
 
 Key elements include:
 - GitHub repository event triggers  

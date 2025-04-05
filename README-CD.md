@@ -11,7 +11,6 @@
   - [5. Tag Distribution on DockerHub](#5-tag-distribution-on-dockerhub)
     - [Repository](#repository)
     - [Example Tag Listing](#example-tag-listing)
-  - [6. Outcome Validation](#6-outcome-validation)
 - [CI/CD Workflow Implementation – Phase Five: Continuous Deployment via Webhooks on AWS EC2](#cicd-workflow-implementation--phase-five-continuous-deployment-via-webhooks-on-aws-ec2)
   - [1. Objective](#1-objective)
   - [2. Infrastructure Overview](#2-infrastructure-overview)
@@ -39,7 +38,7 @@
     - [GitHub Reference](#github-reference-2)
     - [Service Definition](#service-definition)
     - [Enable and Start](#enable-and-start)
-  - [10. Change Management Protocols](#10-change-management-protocols)
+- [Resources](#resources)
 
 
 # Project 5
@@ -48,7 +47,7 @@
 
 ## 1. Introduction
 
-This phase introduces **semantic versioning** into the CI/CD pipeline using annotated Git tags. Instead of relying solely on the `latest` tag convention, this enhancement applies structured version identifiers following the `major.minor.patch` schema to all Docker image releases.
+In this stage, we’re introducing a clear way to label our software versions using semantic versioning. Instead of relying on a generic ‘latest’ label for updates, we’ll use a structured system that follows the format ‘major.minor.patch’. To make it easy to understand, think of this like naming a special recipe for a dish. For example, if you have a recipe for a chocolate cake, you might call it “Chocolate Cake 1.0.0.” If you later make a big change, like adding a new layer, you would rename it to “Chocolate Cake 2.0.0,” indicating a major update. On the other hand, if you only made small adjustments, such as changing the brand of cocoa powder, you might call it “Chocolate Cake 1.1.0.” This way, anyone can easily see what kind of changes have been made with each new version.
 
 The approach ensures:
 - Predictable release management  
@@ -62,7 +61,7 @@ This functionality is powered by the `docker/metadata-action` GitHub Action modu
 
 ## 2. Semantic Tagging Procedure
 
-To manually create and push a versioned Git tag that conforms to [Semantic Versioning standards](https://semver.org):
+To manually create and push a versioned Git tag that conforms to [Semantic Versioning standards](https://semver.org/#semantic-versioning-200):
 
 ```
 git tag -a lux-v1.1.0 -m "LuxOS: second release with version metadata"
@@ -99,8 +98,8 @@ Upon pushing a Git tag to the remote repository, the GitHub Actions pipeline (`d
 | Tag Format       | Description                                |
 |------------------|--------------------------------------------|
 | `lux-v1.1.0`     | Full semantic version (stable release ID)  |
-| `lux-v1.1`       | Minor version shorthand                     |
-| `lux-v1`         | Major version shorthand                     |
+| `lux-v1.1`       | Minor version shorthand                    |
+| `lux-v1`         | Major version shorthand                    |
 | `latest`         | Maintained for backward compatibility      |
 
 ### Relevant Workflow File (Updated Version)
@@ -156,17 +155,6 @@ These tags map to the **same image digest**, ensuring that deployment targets ca
 
 ---
 
-## 6. Outcome Validation
-
-| Operation                 | Status       |
-|---------------------------|--------------|
-| Git annotated tag pushed  | Confirmed    |
-| CI workflow triggered     | Confirmed    |
-| Tag parsing via metadata  | Successful   |
-| Docker image built        | Verified     |
-| All tags pushed to DockerHub | Complete |
-| CI/CD flow integrity      | Maintained   |
-
 # CI/CD Workflow Implementation – Phase Five: Continuous Deployment via Webhooks on AWS EC2
 
 ## 1. Objective
@@ -177,8 +165,6 @@ This phase establishes a **self-healing deployment pipeline** triggered by GitHu
 - Tearing down the old container  
 - Launching the updated Angular frontend (`luximo1/otuvedo-ceg3120`)  
 - Running entirely on an AWS EC2 instance using `adnanh/webhook` for HTTP-based event listening
-
-This closes the DevOps feedback loop, delivering true Continuous Deployment (CD) on cloud infrastructure.
 
 ![CI/CD Deployment Pipeline](images/cd_deployment_pipeline_-_github_to_ec2.png)
 
@@ -416,15 +402,6 @@ To inspect the service:
 sudo systemctl status webhook
 ```
 
----
-
-## 10. Change Management Protocols
-
-| File Changed         | Required Action                                 |
-|----------------------|--------------------------------------------------|
-| `webhook.service`    | `daemon-reload` + `restart`                      |
-| `hooks.json`         | `systemctl restart webhook`                      |
-| `redeploy.sh`        | No action; automatically called on webhook hit  |
-
----
+# Resources
+- []()
 
