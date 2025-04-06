@@ -295,7 +295,7 @@ To define these secrets within a GitHub repository:
      - ![Fig2.1](images/image-6.png)
 
 Personal access tokens can be generated from here:  
-`DockerHub Avatar then Account Settings then Personal Access Token and click on Generate New Token`
+- Click on `DockerHub Avatar then Account Settings then Personal Access Token and click on Generate New Token`
 
 ---
 

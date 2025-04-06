@@ -1,6 +1,14 @@
-- [Project 5](#project-5)
+# CI/CD Workflow Implementation – Phase Four: Semantic Versioning and Release Tagging
+
+## 1. Introduction
+
+In this stage, we’re introducing a clear way to label our software versions using semantic versioning. Instead of relying on a generic ‘latest’ label for updates, we’ll use a structured system that follows the format ‘major.minor.patch’. To make it easy to understand, think of this like naming a special recipe for a dish. For example, if you have a recipe for a chocolate cake, you might call it “Chocolate Cake 1.0.0.” If you later make a big change, like adding a new layer, you would rename it to “Chocolate Cake 2.0.0,” indicating a major update. On the other hand, if you only made small adjustments, such as changing the brand of cocoa powder, you might call it “Chocolate Cake 1.1.0.” This way, anyone can easily see what kind of changes have been made with each new version.
+
+![CI/CD Deployment Pipeline](images/cd_deployment_pipeline_-_github_to_ec2.png)
+## Contents
 - [CI/CD Workflow Implementation – Phase Four: Semantic Versioning and Release Tagging](#cicd-workflow-implementation--phase-four-semantic-versioning-and-release-tagging)
   - [1. Introduction](#1-introduction)
+  - [Contents](#contents)
   - [2. Semantic Tagging Procedure](#2-semantic-tagging-procedure)
     - [Tag Naming Convention](#tag-naming-convention)
   - [3. Workflow Trigger Behavior](#3-workflow-trigger-behavior)
@@ -39,15 +47,6 @@
     - [Service Definition](#service-definition)
     - [Enable and Start](#enable-and-start)
 - [Resources](#resources)
-
-
-# Project 5
-
-# CI/CD Workflow Implementation – Phase Four: Semantic Versioning and Release Tagging
-
-## 1. Introduction
-
-In this stage, we’re introducing a clear way to label our software versions using semantic versioning. Instead of relying on a generic ‘latest’ label for updates, we’ll use a structured system that follows the format ‘major.minor.patch’. To make it easy to understand, think of this like naming a special recipe for a dish. For example, if you have a recipe for a chocolate cake, you might call it “Chocolate Cake 1.0.0.” If you later make a big change, like adding a new layer, you would rename it to “Chocolate Cake 2.0.0,” indicating a major update. On the other hand, if you only made small adjustments, such as changing the brand of cocoa powder, you might call it “Chocolate Cake 1.1.0.” This way, anyone can easily see what kind of changes have been made with each new version.
 
 The approach ensures:
 - Predictable release management  
@@ -165,8 +164,6 @@ This phase establishes a **self-healing deployment pipeline** triggered by GitHu
 - Tearing down the old container  
 - Launching the updated Angular frontend (`luximo1/otuvedo-ceg3120`)  
 - Running entirely on an AWS EC2 instance using `adnanh/webhook` for HTTP-based event listening
-
-![CI/CD Deployment Pipeline](images/cd_deployment_pipeline_-_github_to_ec2.png)
 
 ---
 
@@ -353,6 +350,8 @@ To bind GitHub events to your EC2 deployment:
 5. Events to trigger: **Just the push event**  
 6. Save and test delivery for 200 OK response
 
+   - Do it like this: 👀🥱
+     - ![Fig8.0](images/image-17.png)
 ---
 
 ## 9. Systemd Service – `webhook.service`
