@@ -323,31 +323,45 @@ This ensures deployment automation only occurs for production-bound commits on t
 ### 3.2 Job Definition: `build-and-push`
 
 ```
+
 jobs:
-  build-and-push: # Name of the job within the workflow
-    runs-on: ubuntu-latest # Specifies the runner environment to use. In this case, it's the latest Ubuntu version.
+  # Define the job for building and pushing Docker images
+  build-and-push:
+    # Specify the runner environment as Ubuntu latest version
+    runs-on: ubuntu-latest
 
+    # List the sequence of steps to execute in this job
     steps:
-      - name: Checkout repository # Step to clone the repository onto the runner machine.
-        uses: actions/checkout@v4 # Action that checks out the code from the repository. Version 4 of the checkout action is being used.
+      # Step 1: Check out the repository code to the runner
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx # Step to set up Docker Buildx, a tool that supports advanced build features like multi-platform builds.
-        uses: docker/setup-buildx-action@v3 # Docker action that configures Buildx. Version 3 of this action is being used.
+      # Step 2: Set up Docker Buildx for multi-platform image building
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Authenticate to DockerHub # Step to log into DockerHub so the workflow can push images.
-        uses: docker/login-action@v3 # Docker action that handles authentication to DockerHub. Version 3 of this action is being used.
-        with: # Inputs for the authentication action.
-          username: ${{ secrets.DOCKER_USERNAME }} # DockerHub username stored as a GitHub secret.
-          password: ${{ secrets.DOCKER_TOKEN }} # DockerHub password or access token, also stored securely as a GitHub secret.
+      # Step 3: Authenticate with DockerHub using stored credentials
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          # Use repository secrets for secure credential storage
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Build and Push Docker Image # Step to build the Docker image using the Dockerfile and push it to DockerHub.
-        uses: docker/build-push-action@v5 # Docker action that builds and pushes Docker images. Version 5 of this action is being used.
-        with: # Inputs for building and pushing the image.
-          context: . # Specifies the build context, which is the current directory (where the code resides).
-          file: ./Dockerfile # Path to the Dockerfile used for building the image.
-          push: true # Indicates that the built image should be pushed to a registry (DockerHub).
-          tags: luximo1/otuvedo-ceg3120:latest # Tag(s) assigned to the image. Tags help in identifying the image version or purpose.
-
+      # Step 4: Build the Docker image and push it to DockerHub
+      - name: Build and push Docker image with tag
+        uses: docker/build-push-action@v5
+        with:
+          # Specify build context as current directory
+          context: .
+          # Path to the Dockerfile
+          file: ./Dockerfile
+          # Enable pushing to registry
+          push: true
+          # Define image tags - one with version from git tag, one as latest
+          tags: |
+            luximo1/otuvedo-ceg3120:${{ github.ref_name }}
+            luximo1/otuvedo-ceg3120:latest
 ```
 
 ### 3.3 Key Components
@@ -494,6 +508,38 @@ The diagram—both static and interactive—encodes the following CI/CD pipeline
 ---
 
 # Resources
-- []()
 
-
+- [Multi-stage Docker Builds](https://docs.docker.com/build/building/multi-stage/)
+  - Referenced for optimizing container size and build efficiency in the Angular application deployment.
+- [Dockerizing Angular Applications](https://angular.io/guide/deployment)
+  - Followed best practices for Angular application deployment in container environments.
+- [Angular Deployment Best Practices](https://blog.angular.io/deploy-apps-like-a-pro-with-the-angular-cli-dbe49fb04a90)
+  - Implemented performance optimizations for the containerized Angular application.
+- [Docker GitHub Actions](https://github.com/marketplace/actions/build-and-push-docker-images)
+  - Used the `docker/build-push-action` for automating container builds and registry pushes.
+- [GitHub Encrypted Secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
+  - Implemented secure DockerHub authentication using repository secrets for credentials.
+- [Workflow Syntax for GitHub Actions](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions)
+  - Referenced for properly structuring the `docker-build.yml` workflow file.
+- [Graphviz Documentation](https://graphviz.org/documentation/)
+  - Used to create the static pipeline diagram from DOT language source files.
+- [D3.js Documentation](https://d3js.org/)
+  - Implemented for the interactive force-directed graph visualization of the CI/CD workflow.
+- [Force-Directed Graph Examples](https://observablehq.com/@d3/force-directed-graph)
+  - Adapted example code for our custom workflow visualization with node and link representations.
+- [DOT Language Reference](https://graphviz.org/doc/info/lang.html)
+  - Used for syntax reference when creating the graph definition in `ci-cd.dot`.
+- [Trunk-Based Development](https://trunkbaseddevelopment.com/)
+  - Implemented main-branch workflow triggers following this development methodology.
+- [Pipeline Security Best Practices](https://owasp.org/www-project-web-security-testing-guide/)
+  - Applied security recommendations for handling credentials in automated workflows.
+- [Stack Overflow - Docker issue with Angular site](https://stackoverflow.com/questions/79536757/running-self-hosted-invoice-ninja-on-ubuntu-white-screen-after-account-creatio)
+  - Used for troubleshooting specific container networking and build issues with the downloaded angular site.
+- [Stack Overflow - GitHub Actions locally](https://stackoverflow.com/questions/59241249/how-can-i-run-github-actions-workflows-locally)
+  - Referenced for workflow debugging and environment configuration solutions locally.
+- [ResearchGate - Continuous Integration Best Practices](https://www.researchgate.net/publication/300918421_Automating_Software_Engineering_Best_Practices_Using_an_Open_Source_Continuous_Integration_Framework_Abstract_Only)
+  - Applied research-backed CI practices to our workflow design and trigger configuration.
+- [ResearchGate - DevOps Implementation Challenges](https://www.researchgate.net/publication/325790728_From_Theory_to_Practice_The_Challenges_of_a_DevOps_Infrastructure_as_Code_Implementation)
+  - Used to anticipate and address common challenges in DevOps pipeline implementation.
+- [ResearchGate - Container-based Microservice Architectures](https://www.researchgate.net/publication/389062335_Fully_softwarized_10G-EPON_by_low-latency_function_chaining_in_container_environments)
+  - Applied containerization principles from academic research to our implementation.

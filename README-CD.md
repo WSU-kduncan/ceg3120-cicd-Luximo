@@ -402,6 +402,45 @@ To inspect the service:
 sudo systemctl status webhook
 ```
 
-# Resources
-- []()
+---
 
+# Resources
+
+- [adnanh/webhook GitHub Repo](https://github.com/adnanh/webhook)
+  - Official repo for the webhook listener used to trigger shell scripts from HTTP POST events.
+
+- [Setting up webhooks with GitHub](https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks)
+  - Used to configure repository-level webhook that POSTs on every `main` branch push.
+
+- [Stack Overflow – Webhook trigger conditions](htthttps://stackoverflow.com/questions/61197429/how-to-trigger-gitlab-ci-pipeline-manually-when-in-normal-conditions-it-is-tri)  
+  - Helped debug "Hook rules were not satisfied" errors during POST header testing.
+
+- [Systemd service creation tutorial](https://linuxconfig.org/how-to-create-systemd-service-unit-in-linux)
+  - Guided the creation of `webhook.service` for automatic listener startup on EC2 boot.
+
+- [Stack Overflow – How to use Webhooks](https://stackoverflow.com/questions/72764189/how-to-set-up-webhook-endpoint-so-that-it-can-accept-https-requests)
+  - Provided additional insight into how webhook-based triggers can be structured securely.
+
+- [Install Docker on Ubuntu (Official Docs)](https://docs.docker.com/engine/install/ubuntu/)
+  - Steps used to install and verify Docker engine, CLI, and Compose on Ubuntu 24.04.
+
+- [Stack Overflow – Docker container restart best practices](https://stackoverflow.com/questions/79067260/webhook-service-isnt-triggering)
+  - Informed `Restart=always` setting in `webhook.service` unit file.
+
+- [Diagrams Python Library (Official)](https://diagrams.mingrammer.com/)  
+  - Used to generate local architecture diagrams showing CI/CD workflow using AWS, Docker, and Webhooks.
+
+- [D3.js Force-Directed Graph](https://observablehq.com/@d3/force-directed-graph)  
+  → Reference for building the interactive GitHub→EC2 pipeline visual using D3.js and tooltips.
+
+- [Webhook Architecture for Automation Pipelines](https://www.researchgate.net/publication/389822008_Cloud-Native_DevSecOps_Integrating_Security_Automation_into_CICD_Pipelines)  
+  - Supported using webhooks to achieve push-to-deploy automation in microservice systems.
+
+- [Automating CI/CD Workflows in Cloud Deployments](https://www.researchgate.net/publication/390141404_Automating_Scalable_CICD_Pipelines_for_Cloud-_Native_Microservices)  
+   Helped validate structure of our redeployment pipeline from GitHub, DockerHub,  EC2.
+
+- [journalctl Usage Guide (Ubuntu)](https://man7.org/linux/man-pages/man1/journalctl.1.html)  
+  - Used for real-time service monitoring and hook trigger validation (`journalctl -u webhook -f`).
+
+- [curl Manual – POST with Headers](https://curl.se/docs/manual.html)  
+  - Confirmed correct syntax to test webhook trigger using custom `X-Hook-Token` headers.

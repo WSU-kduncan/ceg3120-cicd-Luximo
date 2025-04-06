@@ -10,3 +10,9 @@ layouting
 vCPU
 json
 Systemd
+POSTs on
+Luximo
+href
+charset
+lang
+doctype
