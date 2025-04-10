@@ -57,6 +57,31 @@ This Project Phase 1 explains how I am creating a version of a web application d
     - [Interactive Features](#interactive-features)
     - [Accessing the Interactive Version](#accessing-the-interactive-version)
   - [6. Logical Flow Model](#6-logical-flow-model)
+- [Troubleshooting Section](#troubleshooting-section)
+  - [1. Webhook Service Not Triggering](#1-webhook-service-not-triggering)
+    - [Problem](#problem)
+    - [Diagnosis](#diagnosis)
+    - [Solution](#solution)
+  - [2. Hook Rules Not Being Satisfied](#2-hook-rules-not-being-satisfied)
+    - [Problem](#problem-1)
+    - [Diagnosis](#diagnosis-1)
+    - [Solution](#solution-1)
+  - [3. Container Not Updating After Image Pull](#3-container-not-updating-after-image-pull)
+    - [Problem](#problem-2)
+    - [Diagnosis](#diagnosis-2)
+    - [Solution](#solution-2)
+  - [4. AWS Security Group Configuration Issues](#4-aws-security-group-configuration-issues)
+    - [Problem](#problem-3)
+    - [Diagnosis](#diagnosis-3)
+    - [Solution](#solution-3)
+  - [5. Missing Docker Group Permissions](#5-missing-docker-group-permissions)
+    - [Problem](#problem-4)
+    - [Diagnosis](#diagnosis-4)
+    - [Solution](#solution-4)
+  - [6. Semantic Version Tag Parsing Issues](#6-semantic-version-tag-parsing-issues)
+    - [Problem](#problem-5)
+    - [Diagnosis](#diagnosis-5)
+    - [Solution](#solution-5)
 - [Resources](#resources)
 
 ---
@@ -507,8 +532,184 @@ The diagram—both static and interactive—encodes the following CI/CD pipeline
 7. The image becomes **publicly accessible** for downstream consumption or deployment.
 ---
 
-# Resources
+# Troubleshooting Section
 
+While setting up this CI/CD pipeline, several common problems were encountered. This section explains those issues and how they were resolved, including how tools like Tabnine within VS Code assisted in identifying and fixing them.
+
+## 1. Webhook Service Not Triggering
+
+### Problem
+After configuring the webhook service on GitHub, the events meant to trigger the redeploy script on the EC2 instance were not working.
+
+### Diagnosis
+Using Tabnine in VS Code revealed that there was a mistake in the service setup where the working directory was not set correctly:
+
+```
+# Original problematic service definition
+[Service]
+ExecStart=/usr/bin/webhook -hooks /etc/webhook/hooks.json -ip 0.0.0.0 -port 9000 -verbose
+Restart=always
+# Missing proper WorkingDirectory specification
+```
+
+Tabnine indicated that the service might not reach the redeploy script because of this configuration error.
+
+### Solution
+I updated the service definition to include the correct working directory:
+
+```
+[Service]
+ExecStart=/usr/bin/webhook -hooks /etc/webhook/hooks.json -ip 0.0.0.0 -port 9000 -verbose
+Restart=always
+User=ubuntu
+WorkingDirectory=/home/ubuntu
+```
+
+As mentioned in a helpful Stack Overflow thread, this change resolved the triggering issue. (https://stackoverflow.com/questions/79067260/webhook-service-isnt-triggering)
+
+## 2. Hook Rules Not Being Satisfied
+
+### Problem
+When trying to manually test the webhook trigger using curl, an error message appeared stating "Hook rules were not satisfied."
+
+### Diagnosis
+Tabnine pointed out that the curl command I was using did not include the necessary header:
+
+```
+# Original problematic curl command
+curl -X POST http://54.89.84.52:9000/hooks/redeploy
+```
+
+On comparing with the hook definition, it became clear that a specific token was missing.
+
+### Solution
+I added the required header to the curl command:
+
+```
+curl -X POST http://54.89.84.52:9000/hooks/redeploy \
+  -H "X-Hook-Token: luximo1-deploy-token"
+```
+
+This confirmed to match the security requirements specified in the hook definition.
+
+## 3. Container Not Updating After Image Pull
+
+### Problem
+Even though the webhook successfully triggered, the container was running an old version of the application after deployment.
+
+### Diagnosis
+Using Tabnine’s suggestions in the redeploy.sh script, it became obvious that the script wasn’t stopping the old container properly:
+
+```
+# Original problematic redeploy script section
+docker pull luximo1/otuvedo-ceg3120:latest
+docker run -d -p 4200:4200 --name angular-app luximo1/otuvedo-ceg3120:latest
+```
+
+Tabnine highlighted that this would fail if a container named "angular-app" was already running.
+
+### Solution
+I revised the redeploy script to ensure that any running container is stopped and removed before launching a new one:
+
+```
+# Pull the latest image from DockerHub
+docker pull luximo1/otuvedo-ceg3120:latest
+
+# Stop and remove any existing container
+docker stop angular-app 2>/dev/null || true
+docker rm angular-app 2>/dev/null || true
+
+# Run a new container with the latest image
+docker run -d -p 4200:4200 --name angular-app luximo1/otuvedo-ceg3120:latest
+```
+
+## 4. AWS Security Group Configuration Issues
+
+### Problem
+The webhook listener was functioning on the EC2 instance but couldn’t be accessed from GitHub.
+
+### Diagnosis
+While updating the documentation in VS Code, Tabnine indicated that clear instructions for configuring the AWS security group rules were lacking:
+
+```
+### AWS Security Group Configuration
+
+| Port  | Description                      |
+|-------|----------------------------------|
+| 4200  | Application (Angular frontend)   |
+| 9000  | Webhook listener endpoint        |
+```
+
+### Solution
+I added detailed steps for configuring the security group in the AWS console:
+1. Go to EC2 > Security Groups
+2. Find the security group linked to your instance
+3. Add inbound rules for TCP ports 4200 and 9000 from the specified source
+4. Save the changes
+
+This ensures that both the webhook listener and the Angular application can be accessed externally now.
+
+## 5. Missing Docker Group Permissions
+
+### Problem
+After I installed Docker and added my user to the docker group, using Docker commands still required elevated permissions.
+
+### Diagnosis
+Tabnine pointed out the need for a comment clarifying the group modification command:
+
+```
+# Add user to docker group
+sudo usermod -aG docker $USER
+```
+
+### Solution
+I added a note in the documentation to address this common oversight:
+
+```
+# Add user to docker group
+sudo usermod -aG docker $USER
+```
+
+> **Note:** Always log out and log back in to apply group membership changes.
+
+This ensures that users know they need to refresh their session after adjusting group memberships at all times.
+
+## 6. Semantic Version Tag Parsing Issues
+
+### Problem
+When pushing tags in the format `lux-v1.1.0`, the GitHub Actions workflow failed to interpret the version correctly.
+
+### Diagnosis
+Tabnine highlighted a mistake in the Docker metadata action configuration:
+
+```
+# Original problematic configuration
+- uses: docker/metadata-action@v5
+  id: meta
+  with:
+    images: luximo1/otuvedo-ceg3120
+    # Missing tag pattern configuration
+```
+
+### Solution
+I updated the metadata-action configuration to properly handle the custom tag format:
+
+```
+- uses: docker/metadata-action@v5
+  id: meta
+  with:
+    images: luximo1/otuvedo-ceg3120
+    tags: |
+      type=semver,pattern={{version}},prefix=lux-v
+      type=semver,pattern={{major}}.{{minor}},prefix=lux-v
+      type=semver,pattern={{major}},prefix=lux-v
+      type=raw,value=latest
+```
+
+This adjustment ensures the correct parsing of semantic version components from the Git tag eventually.
+
+# Resources
+- [Generative AI (Tabnine Dev)](https://www.tabnine.com/) used in VS Code Insiders as autocompletion for words and coding, no prompt given yet.
 - [Multi-stage Docker Builds](https://docs.docker.com/build/building/multi-stage/)
   - Referenced for optimizing container size and build efficiency in the Angular application deployment.
 - [Dockerizing Angular Applications](https://angular.io/guide/deployment)
