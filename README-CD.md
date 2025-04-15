@@ -31,6 +31,7 @@ In this stage, we’re introducing a clear way to label our software versions us
     - [Purpose](#purpose)
     - [Installation](#installation)
     - [AWS Security Group Configuration](#aws-security-group-configuration)
+      - [Summary of Security Protocols:](#summary-of-security-protocols)
   - [6. Webhook Hook Definition – `hooks.json`](#6-webhook-hook-definition--hooksjson)
     - [File Path](#file-path-1)
     - [GitHub Reference](#github-reference-1)
@@ -267,10 +268,23 @@ sudo apt install -y webhook
 
 ### AWS Security Group Configuration
 
-| Port  | Description                      |
-|-------|----------------------------------|
-| 4200  | Application (Angular frontend)   |
-| 9000  | Webhook listener endpoint        |
+| **Port** | **Protocol** | **Source**          | **Description**                                                                                                  |
+|----------|--------------|---------------------|------------------------------------------------------------------------------------------------------------------|
+| **4200** | TCP          | 0.0.0.0/0           | Application (Angular Frontend) - Required for external user access to the web application via browsers.          |
+| **9000** | TCP          | GitHub IP Range     | Webhook Listener Endpoint - Restricted exclusively to GitHub's IP ranges to ensure webhook payloads originate from authorised GitHub servers. |
+| **22**   | TCP          | My IP Address       | SSH Access - Limited to administrator IP addresses, ensuring secure management and resolution of technical issues. |
+
+#### Summary of Security Protocols:
+
+This security group configuration adheres rigorously to the **principle of the least privilege**, focusing on mitigating potential vulnerabilities and ensuring operational security by implementing the following measures:
+
+1. **Selective Internet Exposure**: Only the application port (4200) is open to the public internet, facilitating user access to the Angular frontend, whilst minimising exposure of other services.
+   
+2. **Webhook Traffic Restriction**: Network traffic on port 9000 is strictly confined to GitHub's verified IP address ranges, thereby negating unauthorised attempts at webhook invocation or exploitation by malicious entities.
+   
+3. **Controlled Administrator Access**: SSH access is exclusively restricted to recognised administrator IP addresses, significantly narrowing the attack surface and thwarting brute force attacks.
+   
+4. **Implicit Traffic Denial**: All other inbound traffic is implicitly blocked, further consolidating the security framework and precluding unforeseen vulnerabilities.
 
 These ports must be opened in the EC2 instance’s associated security group by the way for it to work.
 
@@ -411,7 +425,7 @@ sudo systemctl status webhook
 - [Setting up webhooks with GitHub](https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks)
   - Used to configure repository-level webhook that POSTs on every `main` branch push.
 
-- [Stack Overflow – Webhook trigger conditions](htthttps://stackoverflow.com/questions/61197429/how-to-trigger-gitlab-ci-pipeline-manually-when-in-normal-conditions-it-is-tri)  
+- [Stack Overflow – Webhook trigger conditions](https://stackoverflow.com/questions/61197429/how-to-trigger-gitlab-ci-pipeline-manually-when-in-normal-conditions-it-is-tri)  
   - Helped debug "Hook rules were not satisfied" errors during POST header testing.
 
 - [Systemd service creation tutorial](https://linuxconfig.org/how-to-create-systemd-service-unit-in-linux)

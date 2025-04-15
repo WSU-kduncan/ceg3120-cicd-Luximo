@@ -18,3 +18,7 @@ lang
 doctype
 Tabnine
 systemd
+authorised
+minimising
+unauthorised
+recognised
