@@ -20,12 +20,14 @@ This Project Phase 1 explains how I am creating a version of a web application d
     - [Docker Installation (WSL2 Backend)](#docker-installation-wsl2-backend)
   - [3. Preliminary Manual Containerization](#3-preliminary-manual-containerization)
     - [Runtime Procedure](#runtime-procedure)
+      - [Verification Methods](#verification-methods)
   - [4. Declarative Dockerfile Construction](#4-declarative-dockerfile-construction)
     - [Dockerfile](#dockerfile)
     - [Build Logic](#build-logic)
   - [5. Image Compilation \& Execution](#5-image-compilation--execution)
     - [Image Build](#image-build)
     - [Local Run](#local-run)
+      - [Verification Methods](#verification-methods-1)
   - [6. Container Registry Integration](#6-container-registry-integration)
     - [Repository Provisioning](#repository-provisioning)
     - [CLI Authentication](#cli-authentication)
@@ -117,12 +119,13 @@ The target application is a responsive Angular SPA, visually themed and bundled 
 ```
 wsl --install
 docker --version
+docker run hello-world
 ```
 
 Installation source:  
 [Install Docker Desktop on Windows](https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe?_gl=1*1glbvc0*_gcl_au*NTY1OTMzODU3LjE3NDI1NjA0NDk.*_ga*MTc1NjI2MjY5OS4xNzM4NDIzNDk1*_ga_XJWPQMJYHQ*MTc0MzU5MzUyMS41LjEuMTc0MzU5MzUyNi41NS4wLjA.)
 
----
+The command `docker run hello-world` retrieves and executes a test container to validate the proper installation of Docker, as well as its capability to successfully instantiate and operate containers within your system. Upon execution, this test container generates a confirmation message in the console and subsequently terminates automatically, thereby affirming the operational integrity of your Docker environment.
 
 ## 3. Preliminary Manual Containerization
 
@@ -133,6 +136,13 @@ This section illustrates a containerized Angular workflow executed entirely via 
 ```
 docker run -it --rm node:18-bullseye bash
 ```
+
+Flag explanations:
+- `-i`: Interactive mode, keeps STDIN open
+- `-t`: Allocates a pseudo-TTY, providing terminal functionality
+- `--rm`: Automatically removes the container when it exits, preventing container clutter
+- `bash`: Overrides the default command to start a bash shell session
+
 
 Inside the container:
 
@@ -146,6 +156,29 @@ ng serve --host 0.0.0.0
 
 Rationale: Running Angular on `0.0.0.0` allows exposure through Docker port forwarding to the host system.
 
+#### Verification Methods
+
+To verify the container is successfully serving the Angular application:
+
+- From container side: Check if the process is running
+```
+ps aux | grep ng
+```
+
+- Verify port is listening
+```
+sudo ss -tuln | grep 4200
+```
+
+- ![Fig3.0](images/image.png)
+
+- From host side: Check if port 4200 is accessible
+```
+curl http://localhost:4200
+```
+Open a browser and navigate to `http://localhost:4200`
+
+- ![Fig3.1](images/image-19.png)
 ---
 
 ## 4. Declarative Dockerfile Construction
@@ -208,9 +241,41 @@ docker build -t luximo1/otuvedo-ceg3120 .
 docker run -p 4200:4200 luximo1/otuvedo-ceg3120
 ```
 
+Flag explanations:
+- `-p 4200:4200`: Maps port 4200 from the container to port 4200 on the host system
+- This enables browser-based access on the host at `http://localhost:4200`
+
 ![Fig5.1](images/image-1.png)
 
 Mapping `4200:4200` enables browser-based access on the host at `http://localhost:4200`.
+
+#### Verification Methods
+
+To confirm the container is successfully running the Angular application:
+
+- From container side: Get container ID
+```
+docker ps
+```
+
+- Enter the container to check processes
+```
+docker exec -it <container_id> bash
+ps aux | grep node
+sudo ss -tuln | grep 4200
+```
+
+- Check container logs for Angular compilation success
+```
+docker logs <container_id> | grep
+```
+
+- From host side: Test HTTP response from container
+```
+curl -I http://localhost:4200
+```
+
+Open browser and navigate to http://localhost:4200
 
 ![Fig5.2](images/image-2.png)
 
@@ -233,13 +298,33 @@ Steps:
 
 ### CLI Authentication
 
+To authenticate with DockerHub, you'll need to create a Personal Access Token (PAT) first:
+
+1. Log in to your DockerHub account at https://hub.docker.com
+2. Click on your username in the top-right corner
+3. Select "Account Settings" from the dropdown menu
+4. Navigate to the "Security" tab
+5. Click "New Access Token"
+6. Name your token (e.g., "GitHub Actions Integration or any choice of yours")
+7. Set the appropriate access scope:
+   - For pushing images: select "Read & Write" permissions
+   - For read-only access: select "Read-only" permissions
+8. Copy the generated token and store it securely (it will only be shown once, learned that the hard way)
+
+Once you have your PAT, authenticate with DockerHub using:
+
 ```
 docker login
 ```
 
 Enter:
 - DockerHub Username: `luximo1`
-- DockerHub Password or PAT
+- DockerHub Password or PAT: (goes here)
+
+Using a PAT is more secure than using your account password as it:
+- Can be revoked individually without changing your main password
+- Can have limited permissions (read-only or read-write)
+- Can be regenerated regularly to enhance security
 
 ![Fig6.0](images/image-3.png)
 
