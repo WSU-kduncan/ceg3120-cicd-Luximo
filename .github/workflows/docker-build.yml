@@ -43,3 +43,12 @@ jobs:
           tags: |
             luximo1/otuvedo-ceg3120:${{ github.ref_name }}
             luximo1/otuvedo-ceg3120:latest
+
+            # Add this new step
+      - name: Trigger deployment webhook
+        if: success()
+        run: |
+          curl -X POST http://54.227.249.4:9000/hooks/redeploy \
+            -H "X-Hook-Token: luximo1-deploy-token" \
+            -H "Content-Type: application/json" \
+            -d '{"ref": "${{ github.ref }}", "repository": "${{ github.repository }}"}'
