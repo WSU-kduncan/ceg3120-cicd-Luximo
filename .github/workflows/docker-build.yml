@@ -44,7 +44,7 @@ jobs:
             luximo1/otuvedo-ceg3120:${{ github.ref_name }}
             luximo1/otuvedo-ceg3120:latest
 
-            # Add this new step
+      # Step 5: Trigger deployment webhook
       - name: Trigger deployment webhook
         if: success()
         run: |
