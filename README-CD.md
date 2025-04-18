@@ -47,6 +47,15 @@ In this stage, we’re introducing a clear way to label our software versions us
     - [GitHub Reference](#github-reference-2)
     - [Service Definition](#service-definition)
     - [Enable and Start](#enable-and-start)
+- [Implementing Fully Automated Deployment with GitHub Actions Webhook Integration](#implementing-fully-automated-deployment-with-github-actions-webhook-integration)
+  - [Overview](#overview)
+  - [Initial Setup](#initial-setup)
+  - [Problem Identification](#problem-identification)
+  - [Solution Implementation](#solution-implementation)
+    - [Step 1: Update the GitHub Actions Workflow](#step-1-update-the-github-actions-workflow)
+    - [Step 2: Configure Webhook on EC2 Instance](#step-2-configure-webhook-on-ec2-instance)
+    - [Step 3: Troubleshooting Disk Space Issues](#step-3-troubleshooting-disk-space-issues)
+    - [Step 4: Testing the Complete Automation](#step-4-testing-the-complete-automation)
 - [Resources](#resources)
 
 The approach ensures:
@@ -414,6 +423,164 @@ To inspect the service:
 ```
 sudo systemctl status webhook
 ```
+
+# Implementing Fully Automated Deployment with GitHub Actions Webhook Integration
+
+## Overview
+
+This document outlines how I modified our CI/CD pipeline to achieve true end-to-end automation, eliminating the need for manual intervention after a successful build. Originally, our GitHub Actions workflow built and pushed Docker images to DockerHub, but required manual execution of a redeploy script on the EC2 instance to update the running application. I resolved this by implementing a webhook-based system that automatically triggers redeployment when a new image is available.
+
+## Initial Setup
+
+Our pipeline consisted of:
+- GitHub repository with an Angular application
+- GitHub Actions workflow that builds and pushes Docker images on tag push
+- DockerHub repository storing the images
+- EC2 instance running the application in a Docker container
+- Manual redeploy script (`redeploy.sh`) on the EC2 instance
+
+## Problem Identification
+
+I identified two key issues with my setup:
+
+1. **Manual Intervention Required**: After pushing a tag and triggering a build, I had to SSH into the EC2 instance and manually run `./redeploy.sh` to update the application.
+
+2. **GitHub Actions and Webhook Disconnect**: While GitHub could send webhook payloads to the EC2 instance, the webhook wasn't being triggered properly due to authentication issues.
+
+## Solution Implementation
+
+### Step 1: Update the GitHub Actions Workflow
+
+I modified my `.github/workflows/docker-build.yml` to include a step that triggers the webhook after a successful build:
+
+```
+- name: Trigger deployment webhook
+  if: success()
+  run: |
+    curl -X POST http://54.227.249.4:9000/hooks/redeploy \
+      -H "X-Hook-Token: luximo1-deploy-token" \
+      -H "Content-Type: application/json" \
+      -d '{"event": "push", "repository": "${{ github.repository }}", "ref": "${{ github.ref }}"}'
+```
+
+### Step 2: Configure Webhook on EC2 Instance
+
+I updated the webhook configuration on the EC2 instance to use a simpler token-based authentication, thanks to [simpler token-based authentication](https://stackoverflow.com/questions/40498098/why-do-webhook-implementations-avoid-token-based-security):
+
+1. SSH into the instance:
+   ```
+   ssh -i "labsuser2.pem" ubuntu@54.227.249.4
+   ```
+
+2. Navigate to the webhook configuration directory:
+   ```
+   cd /etc/webhook
+   ```
+
+3. Edit the hooks.json file:
+   ```
+   sudo nano hooks.json
+   ```
+
+4. Replace the HMAC-based authentication with a simpler token-based approach:
+   ```
+   [
+     {
+       "id": "redeploy",
+       "execute-command": "/home/ubuntu/redeploy.sh",
+       "command-working-directory": "/home/ubuntu",
+       "response-message": "Redeploying app from DockerHub...",
+       "trigger-rule": {
+         "match": {
+           "type": "value",
+           "value": "luximo1-deploy-token",
+           "parameter": {
+             "source": "header",
+             "name": "X-Hook-Token"
+           }
+         }
+       }
+     }
+   ]
+   ```
+
+5. Restart the webhook service:
+   ```
+   sudo systemctl restart webhook
+   ```
+
+### Step 3: Troubleshooting Disk Space Issues
+
+When testing my solution, I encountered "no space left on device" errors. I fixed this by cleaning up disk space:
+
+1. Check disk usage:
+   ```
+   df -h
+   ```
+- **`-h`**: Displays sizes in a human-readable format (e.g., MB, GB, etc.).
+  - Result showed 97% usage, leaving only 716MB free.
+
+1. Clean up Docker resources:
+   ```
+   docker system prune -af --volumes
+   ```
+- **`-a`**: Removes all unused containers, networks, images, and build caches, not just dangling ones.
+- **`-f`**: Forces the prune action without prompting for confirmation.
+- **`--volumes`**: Includes unused volumes in the pruning process.
+  - This reclaimed 9.927GB of space.
+
+1. Clean up system logs:
+   ```
+   sudo find /var/log -type f -name "*.gz" -delete
+   sudo find /var/log -type f -name "*.1" -delete
+   sudo journalctl --vacuum-time=1d
+   ```
+-  **Find and Delete Logs**:  
+   `sudo find /var/log -type f -name "*.gz" -delete` deletes compressed logs (`.gz`).  
+   `sudo find /var/log -type f -name "*.1" -delete` removes rotated logs (`.1`).
+
+- **Vacuum System Journal Logs**:  
+   `sudo journalctl --vacuum-time=1d` clears logs older than 1 day at least for now.
+
+- **Docker Cleanup**:  
+   `docker system prune -af --volumes` force-deletes unused containers, networks, images, and volumes.
+
+2. Verify disk space:
+   ```
+   df -h
+   ```
+- **`-h`**: Displays sizes in a human-readable format (e.g., MB, GB, etc.).
+  - Result showed 26% usage, freeing up approximately 14 GB.
+
+### Step 4: Testing the Complete Automation
+
+1. Make a change to our Angular application's mission header:
+   ```
+   <h2 class="text-2xl font-semibold mb-4">Our Victorian Thorngate Mission</h2>
+   ```
+
+2. Commit and push the changes:
+   ```
+   git add .
+   git commit -m "Updated Mission Header to Thorngate"
+   git push origin main
+   ```
+
+3. Create and push a tag to trigger the workflow:
+   ```
+   git tag lux-v6.9.8
+   git push origin lux-v6.9.8
+   ```
+
+4. Verify GitHub Actions workflow executed successfully
+
+5. Check webhook logs on EC2:
+   ```
+   sudo journalctl -u webhook -f
+   ```
+   Logs confirmed successful webhook trigger and execution of redeploy script.
+
+6. Verify the application was updated by accessing `http://54.227.249.4:4200` again.
 
 ---
 
