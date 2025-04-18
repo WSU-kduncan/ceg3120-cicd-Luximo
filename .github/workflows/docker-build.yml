@@ -3,7 +3,7 @@ name: Build and Push Docker Image with Tags
 on:
   push:
     tags:
-      - 'lux-v*'  # Trigger only when pushing tags like lux-v1.0.0
+      - "lux-v*" # Trigger only when pushing tags like lux-v1.0.0
 
 jobs:
   # Define the job for building and pushing Docker images
@@ -43,3 +43,11 @@ jobs:
           tags: |
             luximo1/otuvedo-ceg3120:${{ github.ref_name }}
             luximo1/otuvedo-ceg3120:latest
+
+      - name: Trigger deployment webhook
+        if: success()
+        run: |
+          curl -X POST http://54.227.249.4:9000/hooks/redeploy \
+            -H "X-Hook-Token: luximo1-deploy-token" \
+            -H "Content-Type: application/json" \
+            -d '{"event": "push", "repository": "${{ github.repository }}", "ref": "${{ github.ref }}"}'
