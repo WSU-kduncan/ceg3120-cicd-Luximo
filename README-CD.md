@@ -611,7 +611,7 @@ When testing my solution, I encountered "no space left on device" errors. I fixe
   - Used to generate local architecture diagrams showing CI/CD workflow using AWS, Docker, and Webhooks.
 
 - [D3.js Force-Directed Graph](https://observablehq.com/@d3/force-directed-graph)  
-  → Reference for building the interactive GitHub→EC2 pipeline visual using D3.js and tooltips.
+  - Reference for building the interactive GitHub→EC2 pipeline visual using D3.js and tooltips.
 
 - [Webhook Architecture for Automation Pipelines](https://www.researchgate.net/publication/389822008_Cloud-Native_DevSecOps_Integrating_Security_Automation_into_CICD_Pipelines)  
   - Supported using webhooks to achieve push-to-deploy automation in microservice systems.
